@@ -1,0 +1,9 @@
+ext/
+build/
+*.o
+*.elf
+*.wav
+!cwdec/test/real/*.wav
+__pycache__/
+*.dat
+.venv/
