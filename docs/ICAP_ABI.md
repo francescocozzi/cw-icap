@@ -208,8 +208,8 @@ What the SDK did not say (answers below, "Tested on the radio"):
 2. The DECODE screen **opens** with `keep` too, titled with the mode name ("CW DECODE").
 3. Pressing the **CW** mode key afterwards keeps the decoder running and the radio goes back to
    CW. In RTTY-R the audio is in the RTTY passband (~2 kHz, visible in the DECODE spectrum) and
-   the decoder hears nothing between 300 and 1300 Hz: that is why CW.APP shows "premi CW"
-   ("press CW") when the mode is not 0x22.
+   the decoder hears nothing between 300 and 1300 Hz: that is why CW.APP shows "press CW"
+   when the mode is not 0x22.
 4. A green "V" appeared on CW DECODE, almost certainly a CW.APP line decoded from noise in RTTY-R.
 
 How to use it: MODE screen, RTTY → RTTY-R → CW (CW.APP starts, CW DECODE opens), then the CW key.

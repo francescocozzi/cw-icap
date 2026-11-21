@@ -46,7 +46,7 @@ static void vfile(const char *name) {
     char b[96];
     int fd = icap_open(name, ICAP_O_READ);
     o_s(name); o_s(": ");
-    if (fd < 0) { o_s("errore "); o_i(fd); o_s("\n"); return; }
+    if (fd < 0) { o_s("error "); o_i(fd); o_s("\n"); return; }
     int n = icap_read(fd, b, sizeof b - 1);
     icap_close(fd);
     if (n < 0) { o_s("read "); o_i(n); o_s("\n"); return; }
@@ -60,7 +60,7 @@ static void save(void) {
     if (fd >= 0) { icap_write(fd, out, (uint32_t)olen); icap_close(fd); }
 }
 
-#define HAS(f) do { o_s(#f); o_s(ICAP_HAS(f) ? "=si " : "=no "); } while (0)
+#define HAS(f) do { o_s(#f); o_s(ICAP_HAS(f) ? "=yes " : "=no "); } while (0)
 
 int app_main(const struct icap_svc *svc) {
     static int16_t buf[1024];
@@ -112,7 +112,7 @@ int app_main(const struct icap_svc *svc) {
     int rate = icap_audio_rate();
     o_s("audio_rate="); o_i(rate); o_s("\n");
     if (rate > 0) {
-        icap_set_line(0, "PROBE: misura audio 10 s...");
+        icap_set_line(0, "PROBE: measuring audio 10 s...");
         uint32_t t0 = icap_ticks(), calls = 0, zero = 0, gaps = 0, errs = 0, total = 0, maxn = 0, peak = 0;
         uint32_t last_poll = t0, max_wait = 0;
         float sq = 0.0f;
@@ -156,7 +156,7 @@ int app_main(const struct icap_svc *svc) {
     vfile("@CLOCK");
 
     save();
-    icap_set_line(0, "PROBE: PROBE.TXT scritto");
+    icap_set_line(0, "PROBE: PROBE.TXT written");
     wait_ms(3000);
     return 0;
 }

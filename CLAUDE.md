@@ -113,7 +113,7 @@ python3 tools/icap_tool.py disasm ext/apps/705/CLOCK.APP --all
   filtrato dal FIL3 veniva decodificato (corretto: contrasto del picco sul contorno, casi
   `noise_*`/`fil*` nella suite, terza simulazione in `make -C app sim`).
 - `CW:keep` dal tasto RTTY (provato): la radio resta in RTTY-R, si apre "CW DECODE"; premendo CW
-  il decoder resta attivo e il modo torna giusto. CW.APP scrive "premi CW" se il modo non è 0x22.
+  il decoder resta attivo e il modo torna giusto. CW.APP scrive "press CW" se il modo non è 0x22. Messaggi a schermo in inglese (v0.1.1).
 - Sotto antenna (2026-11-21): la ricezione va bene. Su DECODE il testo arrivava a riga chiusa:
   il loader manda ogni `decode_out` come riga a sé (`"\r"+testo+"\r"`, coda di 8, max 83
   caratteri; docs/ICAP_ABI.md). Ora `out=word` (default) manda ogni parola appena finita; chiesto

@@ -176,9 +176,9 @@ static void draw_radio(void) {
     p = put_2(p, rs.freq_hz / 10u % 100u);
     if (rs.mode == RMODE_CW) { p = put_s(p, " kHz CW  "); p = put_s(p, cfg_txt); }
     else {                                            /* avviso: la radio non è in CW */
-        p = put_s(p, " kHz modo 0x");
+        p = put_s(p, " kHz mode 0x");
         *p++ = "0123456789abcdef"[(rs.mode >> 4) & 15]; *p++ = "0123456789abcdef"[rs.mode & 15];
-        p = put_s(p, ": premi CW");               /* es. RTTY-R dopo il ciclo del tasto RTTY */
+        p = put_s(p, ": press CW");               /* es. RTTY-R dopo il ciclo del tasto RTTY */
     }
     if (rs.is_tx) put_s(p, "  TX");
     icap_set_line(W_RADIO, s);
@@ -234,13 +234,13 @@ int app_main(const struct icap_svc *svc) {
     int ml = icap_mode(mode, (int)sizeof mode);
     use_decode_out = ml > 0;
     char t[WIN_W + 24], *p = t;
-    if (ml > 0) { mode[ml < (int)sizeof mode ? ml : (int)sizeof mode - 1] = 0; p = put_s(p, "modo "); p = put_s(p, mode); put_s(p, ": testo anche su DECODE"); }
-    else put_s(p, "da Apps: testo qui sotto");
+    if (ml > 0) { mode[ml < (int)sizeof mode ? ml : (int)sizeof mode - 1] = 0; p = put_s(p, "mode "); p = put_s(p, mode); put_s(p, ": text also on DECODE"); }
+    else put_s(p, "from Apps: text below");
     icap_set_line(W_MSG, t);
 
     int rate = icap_audio_rate();
-    if (rate == ICAP_E_NOSYS) return fail("CW: firmware senza audio (serve v1rc)");
-    if (rate != CWDEC_FS)     return fail("CW: serve audio a 8 kHz");
+    if (rate == ICAP_E_NOSYS) return fail("CW: no audio in firmware (needs v1rc)");
+    if (rate != CWDEC_FS)     return fail("CW: needs 8 kHz audio");
 
     cwdec_config_t cfg;
     cwdec_default_config(&cfg);
@@ -266,10 +266,10 @@ int app_main(const struct icap_svc *svc) {
              * qui farebbe danni (spinge 128 ms di silenzio e azzera la stima del rumore). */
             gaps++;
             char m[WIN_W + 24];
-            put_u(put_s(m, "buchi audio: "), gaps);
+            put_u(put_s(m, "audio gaps: "), gaps);
             icap_set_line(W_MSG, m);
         } else if (n < 0) {
-            icap_set_line(W_MSG, "CW: errore audio");
+            icap_set_line(W_MSG, "CW: audio error");
             icap_sleep_ms(100);
         } else {
             icap_sleep_ms(10);                       /* nessun campione pronto */
