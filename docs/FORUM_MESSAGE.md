@@ -1,46 +1,55 @@
 # Messaggio per SQ6EMM
 
-Il primo messaggio (richiesta dell'header ABI) è superato: il 2026-11-20 è uscito l'SDK ufficiale
-(https://github.com/sq6emm/icap-sdk). Restano solo domande che l'SDK non copre. Da mandare
-**dopo** la prova di PROBE.APP sulla radio (fase 2), così le domande si riducono a ciò che la
-prova non chiarisce. Bozza in inglese.
+Bozza in inglese, da mandare come issue su https://github.com/sq6emm/icap-sdk/issues (le issue
+sono aperte, le discussioni no) o per il canale che usa lui. Il primo messaggio (richiesta
+dell'header ABI) è superato dall'SDK ufficiale del 2026-11-20.
+
+Già chiarito dalle prove, quindi non lo chiediamo:
+- l'audio di `icap_audio_read` in CW passa dal filtro IF (il rumore filtrato da FIL3 arrivava
+  all'app);
+- la dipendenza dall'AF gain si misura con PROBE.APP.
+
+Il punto 4 (trasmissione) va lasciato fuori finché la regola 1 di CLAUDE.md non cambia.
 
 ---
 
-**Subject:** CW decoder app on the ICAP SDK — questions about decoder modes and DECODE output
+**Subject:** CW decoder app on ICAP: character output to DECODE, KEEP mode, Apps menu limit
 
 Hi Dawid,
 
-thanks for publishing the ICAP SDK. I've ported my CW (Morse) decoder app to it: RX only, it
-uses `icap_audio_read`, `icap_decode_out` and `icap_set_line`, and it is packed with
-`--background --mode CW:keep`. I'd like to offer it for the bundle under MIT.
+thanks for ICAP and the SDK. I've written a CW (Morse) decoder app on the SDK:
+https://github.com/francescocozzi/cw-icap (MIT, RX only). It uses `icap_audio_read`,
+`icap_decode_out` and `icap_set_line`, and is packed with `--background --mode CW:keep`.
+Tested on IC-705 E, firmware and SD runtime 20261119v14. Reception on air is good. If you think
+it's useful, I'd be glad to have it in the bundle.
 
-A few things I couldn't find in the SDK:
+Three questions/requests:
 
-1. **`ICAP_RMODE_KEEP` and the RTTY button cycle.** Tested on IC-705 E, 20261119v14: with `keep`
-   the radio stays in RTTY-R (the last mode of the cycle) and the DECODE screen opens as
-   "CW DECODE". Pressing CW afterwards keeps the app running and the radio is back in CW, so it
-   works with one extra key press. Would it be possible for `keep` to restore the mode the radio
-   was in before the cycle started? In RTTY-R the audio is in the RTTY passband and a CW decoder
-   hears nothing.
-2. **Audio in CW mode.** Is `icap_audio_read` taken after the CW IF filter (so a narrow filter
-   helps the decoder), and is it independent of the AF gain?
-3. **Apps menu limit.** On IC-705 E with firmware and SD apps 20261119v14, MENU > SET > Apps shows
-   only 8 entries. With the full bundle (8 apps) a ninth `PROBE.APP`, header identical in layout
-   to `CLOCK.APP`, was not listed; after removing `PI4.APP` it appeared. Is 8 the intended
-   limit? From the patch it looks hard-wired: the scan stops after the 8th `.APP` in directory
-   order (`cmp r4, #7` at 0x2037ca66 in 705E140_20261119v14), the name table has 8 entries and
-   the menu page has 8 rows. Could a second page (or a longer list) be added, so third-party
-   apps don't have to replace a bundle app? Until then, should the README mention the limit
-   and that the first 8 files in directory order win?
+1. **Character output to DECODE.** CW, like RTTY, is read as it arrives, but every
+   `icap_decode_out()` call becomes its own line. From the v14 patch I see the loader queues the
+   string, turns control characters into spaces and passes it on as `"\r" + text + "\r"`. Could
+   there be a way to append text to the current line, for example a new slot `decode_put()`
+   that sends the text as is and lets the app send `\r` itself? For now I send one word per
+   call, so the DECODE screen shows one word per line.
 
-4. **Character streaming to DECODE.** On air the CW decoder works well, but `decode_out` sends
-   every call as its own line (from the patch: queued, then passed on as `"\r" + text + "\r"`,
-   control characters replaced by spaces). For CW, as for RTTY, characters should appear as they
-   are decoded. Could there be a variant (a flag, or a new slot such as `decode_put`) that
-   appends text without the two CRs and lets the app send `\r` itself? For now I send one word
-   per call.
+2. **`ICAP_RMODE_KEEP` and the RTTY button cycle.** With `keep` the radio stays in RTTY-R (the
+   last mode of the cycle) and the screen opens as "CW DECODE". Pressing CW afterwards keeps the
+   app running and the radio goes back to CW, so it works with one extra key press. Could
+   `keep` restore the mode the radio was in before the cycle started? In RTTY-R the audio sits
+   in the RTTY passband, so a CW decoder hears nothing.
 
-Results from the radio so far: [riempire dopo la fase 2].
+3. **Apps menu limit.** MENU > SET > Apps lists 8 apps at most. With the full v14 bundle (8
+   apps) a ninth `PROBE.APP` did not show up; after removing `PI4.APP` it did. In the patch the
+   scan stops after the 8th `.APP` in directory order (`cmp r4, #7` at 0x2037ca66), the name
+   table has 8 entries and the menu page has 8 rows. Could a second page or a longer list be
+   added, so third-party apps don't have to replace a bundle app? Until then, it might help to
+   say in the README that only the first 8 files in directory order are listed.
+
+<!-- solo se la regola 1 di CLAUDE.md cambia:
+4. **CW text through the radio's keyer.** For QSO/contest macros with the decoded callsign
+   filled in (as on the RTTY screen), an app would need to send text through the radio's own
+   CW keyer (speed, break-in and sidetone as set on the radio), not as audio in USB-D. Would
+   something like `cw_send(const char *text)`, gated like TX, be possible?
+-->
 
 73, Francesco IZ7KHR
