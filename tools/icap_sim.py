@@ -254,6 +254,11 @@ class Sim:
                 self.ret(n)
         elif name == 'decode_out':
             s = self.cstr(r0)
+            # loader v14 (0x2037c444): riga a sé in una coda di 8, al massimo 83 caratteri,
+            # i caratteri fuori da 0x20..0x7e diventano spazi; poi "\r" + testo + "\r" su DECODE
+            if len(s) > 83:
+                self.violations.append(f'decode_out di {len(s)} caratteri: il loader tronca a 83')
+            s = ''.join(c if ' ' <= c <= '~' else ' ' for c in s[:83])
             self.decodes.append(s); self.log(f'DECODE: {s}')
             if not self.start_mode and len(self.decodes) == 1:
                 # IC-705 v14: avviata da Apps, decode_out si comporta come print() e fa scorrere

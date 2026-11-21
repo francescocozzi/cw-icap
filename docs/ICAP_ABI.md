@@ -123,6 +123,49 @@ File originale: `ext/sd-backup/PROBE-1.TXT`. Radio in CW su 7027 kHz, app avviat
 - `@CLOCK` ha un formato più ricco di quello del README (`K=… S=… L=1 P=60000 O=1000 N=…`):
   `P`/`O` sono in ms, non in s.
 
+### Da dove viene il limite (analisi della patch 705E140_20261119v14, codice MIT di SQ6EMM)
+
+Il codice del loader è in chiaro nel file di patch (`ext/icom-custom-firmware/patches/`), come
+byte con indirizzo; non serve il firmware Icom. Indirizzi nell'immagine della CPU principale:
+
+- **Scansione di `C:\IC-705\Apps`** (`0x2037c9b2`…`0x2037caa0`): legge al massimo 256 voci della
+  cartella e accetta i nomi 8.3 lunghi 5–12 caratteri che finiscono in `.APP` (maiuscole o
+  minuscole). Con `cmp r4, #7 / bgt` (`0x2037ca66`) **smette di registrarne dopo l'ottava**: le
+  successive sono ignorate senza avviso. Contano le prime 8 nell'**ordine della directory FAT**
+  (in pratica l'ordine di copia), non in ordine alfabetico.
+- I nomi vanno in una tabella fissa di 8 voci da 13 byte (`0x2037efd4`), seguita da un'altra
+  tabella per app (`0x2037f57c`, 8 × 181 byte). Poi un ordinamento per nome (`0x2037cac0`): nel
+  menu le app compaiono in ordine alfabetico.
+- **Il menu ha 8 righe fisse**: le funzioni a `0x2037b384` e `0x2037b3e8` riempiono e azzerano
+  esattamente 8 voci (`cmp r4, #8`), cioè le righe di una pagina di menu Icom riusata.
+
+Quindi il limite non si supera con file o configurazioni: servirebbe una modifica al firmware
+(tabelle più grandi e un menu a più pagine), che spetta a SQ6EMM. Nel frattempo: tenere sulla SD
+al massimo 8 file `.APP`, oppure copiare per primi quelli che si vogliono vedere. Attenzione: un
+file nascosto del Finder come `._CLOCK.APP` sulla FAT ha un nome corto che finisce in `.APP` e
+potrebbe occupare un posto (non verificato): meglio cancellarli sempre.
+
+## `decode_out` nel loader v14 (analisi della patch, 2026-11-21)
+
+Provato sotto antenna (2026-11-21): la ricezione va bene, ma sulla schermata DECODE il testo
+arrivava solo a riga chiusa (CW.APP mandava la riga intera), mentre la finestra dell'app si
+aggiornava carattere per carattere. Dal codice del loader:
+
+- la `struct icap_svc` sta a `0x2037ecd0`; `decode_out` (+0x5c) punta a `0x2037c444`;
+- se l'app non è partita da un modo decoder (word a `0x2037ed78+0x848` nulla) salta a `print`
+  (+0x10): è il comportamento "da Apps" visto sulla radio;
+- altrimenti copia la stringa in una **coda di 8 righe da 84 byte** (massimo 83 caratteri, i
+  caratteri fuori da 0x20..0x7e diventano spazi, quindi niente `\r`/`\n` dall'app). A coda
+  piena la riga si perde senza errore;
+- un'altra funzione (`0x2037db44`) toglie una riga per volta dalla coda e la passa al firmware
+  come **`"\r" + testo + "\r"`**, con la stessa routine (`0x2003e018`) che sembra usare il
+  decoder RTTY nativo, che scrive a flusso di caratteri.
+
+Quindi ogni chiamata è una riga nuova e non si può allungare una riga già scritta: il tempo reale
+"come RTTY" richiederebbe al loader una variante senza i due `\r`. CW.APP ora manda su DECODE
+**ogni parola appena finita** (`out=word`, default in CW.CFG, senza prefisso) oppure righe intere
+(`out=line`). Il simulatore tronca a 83 caratteri come il loader e lo segnala.
+
 ## Domande aperte di prima
 
 1. **Righe dello schermo** → 8 (`set_line` 0..7), circa 39 caratteri (misurato). La larghezza

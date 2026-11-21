@@ -100,9 +100,9 @@ python3 tools/icap_tool.py disasm ext/apps/705/CLOCK.APP --all
 - SDK ufficiale ICAP v1rc (icap-sdk 1ca9f04, firmware 705E 20261119v14 / runtime SD 20261119v14, installati sulla radio di IZ7KHR il 2026-11-20; CLOCK.APP funziona):
   progetto migrato (icap.h, app.ld, icap_start.S, mkapp.py, flag di compilazione). La
   ricostruzione precedente è confrontata con l'SDK in docs/ICAP_ABI.md.
-- Provato sulla radio: il menu Apps elenca al massimo 8 app (il bundle v14 ne ha 8). Sulla SD
-  PI4 è stata tolta (copia in `ext/sd-backup/`) per far posto a PROBE; per CW.APP serve un altro
-  posto. Copiare sulla SD da terminale con `cp -X` (niente file `._*`).
+- Provato sulla radio: il menu Apps elenca al massimo 8 app (il bundle v14 ne ha 8). Limite fisso
+  nel loader (contano i primi 8 `.APP` in ordine di directory; docs/ICAP_ABI.md). Sulla SD
+  PI4 è stata tolta (copia in `ext/sd-backup/`); ora sulla SD ci sono 7 app del bundle + CW.APP. Copiare sulla SD da terminale con `cp -X` (niente file `._*`).
 - PROBE.APP eseguita sulla radio (docs/ICAP_ABI.md, "Misure di PROBE.APP"): codice modo CW 0x22,
   audio 8 kHz in blocchi ≤60 campioni senza overrun, livello basso (picco ~580) ma sufficiente; finestra di 8 righe da ~39 caratteri (font
   proporzionale, testo tagliato a destra).
@@ -112,8 +112,13 @@ python3 tools/icap_tool.py disasm ext/apps/705/CLOCK.APP --all
   `noise_*`/`fil*` nella suite, terza simulazione in `make -C app sim`).
 - `CW:keep` dal tasto RTTY (provato): la radio resta in RTTY-R, si apre "CW DECODE"; premendo CW
   il decoder resta attivo e il modo torna giusto. CW.APP scrive "premi CW" se il modo non è 0x22.
+- Sotto antenna (2026-11-21): la ricezione va bene. Su DECODE il testo arrivava a riga chiusa:
+  il loader manda ogni `decode_out` come riga a sé (`"\r"+testo+"\r"`, coda di 8, max 83
+  caratteri; docs/ICAP_ABI.md). Ora `out=word` (default) manda ogni parola appena finita; chiesto
+  a SQ6EMM un'uscita a caratteri (FORUM_MESSAGE.md, domanda 4). Da provare sulla radio.
+- CW.CFG si legge fino a 1 KB (prima 256 byte: con i commenti le ultime righe si perdevano).
 - Ancora da provare sulla radio (fase 2): larghezza della schermata DECODE nativa, dipendenza
-  dell'audio da AF gain e filtro, decodifica di un segnale reale e testo su CW DECODE.
+  dell'audio da AF gain e filtro.
 - Decoder: passa la suite (CER 0–3% fino a SNR 3 dB/2500 Hz, 12–45 WPM, Farnsworth, deriva,
   avvio a QSO in corso). Partenza a freddo risolta: linea di ritardo 128 ms davanti al rivelatore,
   aggancio pitch immediato, gate di presenza tono dal banco Goertzel (anche a pitch fisso),

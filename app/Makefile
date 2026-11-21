@@ -86,6 +86,10 @@ sim: $(BUILD)/CW.APP
 	$(PYTHON) ../cwdec/test/gen_cw.py $(BUILD)/sim.wav "CQ CQ DE IZ7KHR IZ7KHR PSE K" --wpm 22 --pitch 650 --snr 10
 	$(PYTHON) $(TOOLS)/icap_sim.py $(BUILD)/CW.APP --wav $(BUILD)/sim.wav --cfg CW.CFG --start-mode CW \
 	    --expect "CQ CQ DE IZ7KHR IZ7KHR PSE K"
+	@echo "--- out=line: su DECODE righe intere col prefisso invece di parole ---"
+	sed 's/^out=.*/out=line/' CW.CFG > $(BUILD)/line.cfg
+	$(PYTHON) $(TOOLS)/icap_sim.py $(BUILD)/CW.APP --wav $(BUILD)/sim.wav --cfg $(BUILD)/line.cfg --start-mode CW \
+	    --expect "CQ CQ DE IZ7KHR IZ7KHR PSE K"
 	@echo "--- avvio da Apps (niente decode_out, testo nella finestra), buco audio ogni ~200 ms ---"
 	$(PYTHON) $(TOOLS)/icap_sim.py $(BUILD)/CW.APP --wav $(BUILD)/sim.wav --cfg CW.CFG --overrun-every 27 \
 	    --expect "CQ CQ DE IZ7KHR IZ7KHR PSE K"

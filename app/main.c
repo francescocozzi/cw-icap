@@ -3,16 +3,20 @@
  * Solo ricezione: nessuna chiamata icap_tx_*.
  *
  * Uscite:
- *   - testo decodificato a righe nello stile delle app digi: "HHMM WPM  Hz : TESTO". Una riga
- *     si chiude quando la parola successiva non ci sta, dopo FLUSH_IDLE_MS senza caratteri
- *     (fine del passaggio) e all'uscita. Le ultime 4 righe restano sempre nella finestra.
- *     icap_decode_out() solo se l'app è partita da un modo decoder: avviata da Apps, sulla radio
- *     decode_out si comporta come print() e fa scorrere la finestra (provato su IC-705, v14).
+ *   - finestra: righe nello stile delle app digi, "HHMM WPM  Hz : TESTO". Una riga si chiude
+ *     quando la parola successiva non ci sta, dopo FLUSH_IDLE_MS senza caratteri (fine del
+ *     passaggio) e all'uscita. Le ultime 4 righe restano sempre nella finestra.
+ *   - schermata DECODE (icap_decode_out), solo se l'app è partita da un modo decoder: avviata da
+ *     Apps, sulla radio decode_out si comporta come print() e fa scorrere la finestra (provato su
+ *     IC-705, v14). Il loader v14 manda ogni chiamata come riga a sé ("\r" + testo + "\r", max
+ *     83 caratteri, coda di 8): una riga già scritta non si può allungare. Quindi:
+ *       out=word (default)  ogni parola appena finita, senza prefisso: quasi in tempo reale
+ *       out=line            la riga intera col prefisso, come nella finestra (arriva a riga chiusa)
  *   - stato -> icap_set_line() sulle 8 righe della finestra dell'app (vedi W_* sotto).
  *
  * Avvio: dal modo decoder "CW" registrato nell'header (RTTY → RTTY-R → CW, radio_mode keep)
  * oppure da MENU > SET > Apps. Configurazione da CW.CFG nella cartella delle app:
- *   pitch=600   (0 = ricerca automatica)    bw=80    wpm=20    squelch=12
+ *   pitch=600   (0 = ricerca automatica)    bw=80    wpm=20    squelch=12    out=word|line
  */
 #include "icap.h"
 #include "../cwdec/cwdec.h"
@@ -72,6 +76,8 @@ static uint32_t last_char_ms;
 static char hist[N_HIST][64];     /* storico delle righe chiuse, hist[N_HIST-1] = la più recente */
 static int  hist_dirty, live_dirty;
 static int  use_decode_out;       /* 1 se avviata da un modo decoder */
+static int  out_line;             /* CW.CFG out=line: su DECODE righe intere invece di parole */
+static int  dec_sent;             /* caratteri di cur già mandati su DECODE (out=word) */
 static char cfg_txt[24];          /* riassunto della configurazione per la riga W_RADIO */
 
 static void stamp_now(char *hhmm) {
@@ -80,9 +86,25 @@ static void stamp_now(char *hhmm) {
     else put_s(hhmm, "----");
 }
 
-/* emette i primi n caratteri di cur come riga DECODE e tiene il resto */
+/* out=word: manda su DECODE cur[dec_sent..n) senza spazi ai bordi, come riga a sé */
+static void send_words(int n) {
+    int a = dec_sent;
+    while (a < n && cur[a] == ' ') a++;
+    while (n > a && cur[n - 1] == ' ') n--;
+    if (use_decode_out && !out_line && n > a) {
+        char w[DEC_TEXT_W + 1];
+        int k = 0;
+        for (int i = a; i < n; i++) w[k++] = cur[i];
+        w[k] = 0;
+        icap_decode_out(w);
+    }
+}
+
+/* emette i primi n caratteri di cur come riga e tiene il resto */
 static void commit(int n) {
     while (n > 0 && cur[n - 1] == ' ') n--;
+    if (n > dec_sent) send_words(n);
+    dec_sent = 0;                                     /* il resto (parola in corso) non è ancora uscito */
     if (n > 0) {
         char line[64], *p = line;
         p = put_s(p, cur_hhmm); *p++ = ' ';
@@ -91,7 +113,7 @@ static void commit(int n) {
         p = put_s(p, " : ");
         for (int i = 0; i < n; i++) *p++ = cur[i];
         *p = 0;
-        if (use_decode_out) icap_decode_out(line);
+        if (use_decode_out && out_line) icap_decode_out(line);
         for (int i = 0; i < N_HIST - 1; i++) put_s(hist[i], hist[i + 1]);
         put_s(hist[N_HIST - 1], line);
         hist_dirty = 1;
@@ -110,6 +132,8 @@ static void on_char(void *user, char c) {
     if (c == ' ') {
         if (cur_len == 0 || cur[cur_len - 1] == ' ') return;
         if (cur_len >= DEC_TEXT_W) { commit(cur_len); return; }
+        send_words(cur_len);                          /* parola finita: subito su DECODE */
+        dec_sent = cur_len;
         cur[cur_len++] = ' '; cur[cur_len] = 0;
         word_start = cur_len;
         live_dirty = 1;
@@ -171,7 +195,7 @@ static void make_cfg_txt(const cwdec_config_t *c) {
 
 /* ---------- configurazione ---------- */
 static void load_cfg(cwdec_config_t *cfg) {
-    static char buf[256];
+    static char buf[1024];                            /* CW.CFG coi commenti supera i 256 byte */
     int fd = icap_open("CW.CFG", ICAP_O_READ);
     if (fd < 0) return;
     int n = icap_read(fd, buf, sizeof buf - 1);
@@ -187,6 +211,7 @@ static void load_cfg(cwdec_config_t *cfg) {
         else if (key_is(l, "bw")      && parse_u(l + 3, &v)) cfg->bw_hz = (float)v;
         else if (key_is(l, "wpm")     && parse_u(l + 4, &v)) cfg->init_wpm = (float)v;
         else if (key_is(l, "squelch") && parse_u(l + 8, &v)) cfg->squelch_db = (float)v;
+        else if (key_is(l, "out"))     out_line = l[4] == 'l';
         *e = save;
         l = *e ? e + 1 : e;
     }
