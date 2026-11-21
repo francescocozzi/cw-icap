@@ -1,15 +1,13 @@
-# Messaggio per SQ6EMM
+# Message to SQ6EMM
 
-Bozza in inglese, da mandare come issue su https://github.com/sq6emm/icap-sdk/issues (le issue
-sono aperte, le discussioni no) o per il canale che usa lui. Il primo messaggio (richiesta
-dell'header ABI) è superato dall'SDK ufficiale del 2026-11-20.
+Draft, to be sent as an issue at https://github.com/sq6emm/icap-sdk/issues (issues are open,
+discussions are not). The first message (request for the ABI header) was superseded by the
+official SDK of 2026-11-20.
 
-Già chiarito dalle prove, quindi non lo chiediamo:
-- l'audio di `icap_audio_read` in CW passa dal filtro IF (il rumore filtrato da FIL3 arrivava
-  all'app);
-- la dipendenza dall'AF gain si misura con PROBE.APP.
-
-Il punto 4 (trasmissione) va lasciato fuori finché la regola 1 di CLAUDE.md non cambia.
+Already answered by tests, so not asked:
+- in CW the audio of `icap_audio_read` comes after the IF filter (noise shaped by FIL3 reached the
+  app);
+- the AF gain dependence can be measured with PROBE.APP.
 
 ---
 
@@ -45,7 +43,7 @@ Three questions/requests:
    added, so third-party apps don't have to replace a bundle app? Until then, it might help to
    say in the README that only the first 8 files in directory order are listed.
 
-<!-- solo se la regola 1 di CLAUDE.md cambia:
+<!-- only if the project's receive-only rule changes:
 4. **CW text through the radio's keyer.** For QSO/contest macros with the decoded callsign
    filled in (as on the RTTY screen), an app would need to send text through the radio's own
    CW keyer (speed, break-in and sidetone as set on the radio), not as audio in USB-D. Would

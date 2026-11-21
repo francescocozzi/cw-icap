@@ -1,55 +1,59 @@
-# cw-icap — decoder CW per IC-705 / IC-9700 (app SD per il firmware SQ6EMM)
+# cw-icap — CW decoder for IC-705 / IC-9700 (SD app for the SQ6EMM firmware)
 
-Decoder CW (Morse) che gira **sulla radio**, come
-app `.APP` del loader ICAP incluso nel firmware custom di SQ6EMM. Non serve modificare il
-firmware: si installa una volta la release ICAP con il web patcher di SQ6EMM, poi si copia
-`CW.APP` in `\IC-705\Apps\` e si lancia da MENU > SET > Apps (o dal modo decoder "CW" sul tasto
-RTTY). Si costruisce con l'SDK ufficiale ICAP di SQ6EMM (https://github.com/sq6emm/icap-sdk).
+A CW (Morse) decoder that runs **inside the radio**, as an `.APP` for the ICAP loader included in
+SQ6EMM's custom firmware. The firmware is not modified: install the ICAP release once with
+SQ6EMM's web patcher, copy `CW.APP` to `\IC-705\Apps\` and start it from MENU > SET > Apps (or
+from the "CW" decoder mode on the RTTY button). Built with SQ6EMM's official ICAP SDK
+(https://github.com/sq6emm/icap-sdk).
 
-## Stato
+## Status
 
-| Pezzo | Stato |
+| Part | Status |
 |---|---|
-| Decoder CW in C (`cwdec/`) | CER 0–3% su segnali sintetici fino a 3 dB SNR, 12–45 WPM, Farnsworth, deriva; non decodifica il rumore filtrato dall'IF |
-| Banco di prova su PC | Generatore di segnali + suite di regressione con CER |
-| App `CW.APP` | Modo decoder "CW" sul tasto RTTY (RTTY → RTTY-R → CW) o MENU > SET > Apps; testo nella finestra e sulla schermata DECODE |
-| Emulatore | `tools/icap_sim.py` esegue il `.APP` ARM con una `struct icap_svc` finta e audio da WAV |
-| Sulla radio | Provata su IC-705 (firmware SQ6EMM 20261119v14): ricezione sotto antenna buona |
+| CW decoder in C (`cwdec/`) | CER 0–3% on synthetic signals down to 3 dB SNR, 12–45 WPM, Farnsworth, drift; does not decode IF-filtered noise |
+| PC test bench | Signal generator + regression suite with CER |
+| `CW.APP` | "CW" decoder mode on the RTTY button (RTTY → RTTY-R → CW) or MENU > SET > Apps; text in the app window and on the DECODE screen |
+| Emulator | `tools/icap_sim.py` runs the ARM `.APP` with a fake `struct icap_svc` and audio from a WAV file |
+| On the radio | Tested on IC-705 (SQ6EMM firmware 20261119v14): good reception on air |
 
-Limiti noti (dettagli in `docs/ICAP_ABI.md`):
-- il menu Apps del loader v14 mostra al massimo **8 app** (le prime 8 in ordine di directory):
-  per aggiungere `CW.APP` al bundle completo bisogna toglierne una;
-- dal tasto RTTY la radio resta in RTTY-R: premere **CW** dopo aver scelto il modo decoder;
-- sulla schermata DECODE ogni chiamata è una riga a sé: il testo arriva **una parola per riga**
-  (`out=word`) o a righe intere (`out=line`), non carattere per carattere.
+Known limits (details in `docs/ICAP_ABI.md`):
+- the Apps menu of the v14 loader lists at most **8 apps** (the first 8 in directory order): to
+  add `CW.APP` to the full bundle you have to remove one;
+- from the RTTY button the radio stays in RTTY-R: press **CW** after selecting the decoder mode;
+- on the DECODE screen every call is a line of its own: text arrives **one word per line**
+  (`out=word`) or in whole lines (`out=line`), not character by character.
 
-## Installare sulla radio
+## Installing on the radio
 
-Serve il firmware custom di SQ6EMM con il loader ICAP (https://github.com/sq6emm/icom-custom-firmware).
-Tieni una copia della SD con il bundle originale. Copia `CW.APP` e `CW.CFG` in `\IC-705\Apps\`
-(o `\IC-9700\Apps\`); da macOS usa `cp -X` e cancella i file `._*`. Per togliere l'app basta
-cancellare il file. Opzioni in `CW.CFG`: `pitch`, `bw`, `wpm`, `squelch`, `out`.
+You need SQ6EMM's custom firmware with the ICAP loader
+(https://github.com/sq6emm/icom-custom-firmware). Keep a copy of the SD card with the original
+bundle. Copy `CW.APP` and `CW.CFG` to `\IC-705\Apps\` (or `\IC-9700\Apps\`); on macOS use
+`cp -X` and delete the `._*` files. To remove the app just delete the file. Options in `CW.CFG`:
+`pitch`, `bw`, `wpm`, `squelch`, `out`.
 
-## Compilare
+## Building
 
 ```sh
-./tools/fetch_upstream.sh                                # SDK ufficiale e app di riferimento in ext/
+./tools/fetch_upstream.sh                                # official SDK and reference apps into ext/
 python3 -m venv .venv && . .venv/bin/activate
 pip install capstone pyelftools unicorn numpy
 brew install arm-none-eabi-gcc arm-none-eabi-binutils    # macOS
 make -C cwdec test && make -C app && make -C app sim
 ```
 
-Requisiti: python3, un compilatore C per il PC, `arm-none-eabi-gcc` (come l'SDK; in alternativa
-non ufficiale `clang` + `ld.lld` con `make -C app TOOLCHAIN=clang`), git.
-Il progetto si sviluppa con Claude Code (`CLAUDE.md`, comandi `/decoder-test` e `/re-api`).
+Requirements: python3, a C compiler for the PC, `arm-none-eabi-gcc` (as the SDK uses; unofficial
+alternative `clang` + `ld.lld` with `make -C app TOOLCHAIN=clang`), git.
 
-## Sicurezza
+## Safety
 
-- CW.APP è solo ricezione; le funzioni di trasmissione dell'API non vanno usate.
-- Le app non possono cambiare frequenza né modo della radio (regola dell'SDK).
-- Primo avvio sulla radio: **PROBE.APP**, che legge e basta (fase 2 del piano).
-- Se un'app si blocca: spegni, togli il file dalla SD. Il firmware non viene toccato.
-- Non pubblicare firmware Icom né immagini decodificate.
+- CW.APP is receive only; the TX functions of the API are not used.
+- Apps cannot change the radio's frequency or mode (SDK rule).
+- First run on a radio: **PROBE.APP**, which only reads and measures.
+- If an app hangs: switch the radio off and remove the file from the SD card. The firmware is
+  not touched.
+- Do not publish Icom firmware or decoded firmware images.
 
-## Licenza\n\nMIT (vedi `LICENSE`), come l'SDK ICAP. `app/icap.h` è una copia dell'SDK di SQ6EMM (MIT).\nLe app GPL-3.0 dell'SDK (FT8, JT4, ...) si studiano ma non si copiano qui.
+## License
+
+MIT (see `LICENSE`), like the ICAP SDK. `app/icap.h` is a copy of SQ6EMM's SDK header (MIT).
+The GPL-3.0 apps of the SDK (FT8, JT4, ...) are studied but not copied here.

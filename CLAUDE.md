@@ -1,7 +1,9 @@
 # CW decoder per IC-705 / IC-9700 — istruzioni per Claude Code
 
-Progetto di Francesco Cozzi (IZ7KHR). Lingua di lavoro: **italiano** (commenti, docs, messaggi
-di commit in italiano; identificatori C in inglese).
+Progetto di Francesco Cozzi (IZ7KHR). Lingua di lavoro con l'utente: **italiano**. La repo è
+pubblica (https://github.com/francescocozzi/cw-icap): **README, docs/, CW.CFG e messaggi di
+commit in inglese**; commenti nel codice in italiano; identificatori C in inglese. Nei commit
+**nessuna riga Co-Authored-By** né altra attribuzione a Claude.
 
 ## Obiettivo
 
@@ -34,7 +36,7 @@ tools/
   icap_api_scan.py  censisce le chiamate a struct icap_svc nelle app di riferimento
   icap_sim.py     emulatore (Unicorn) con struct icap_svc finta (SVC_LAYOUT) e audio da WAV
   fetch_upstream.sh scarica SDK, repo SQ6EMM e bundle delle app in ext/ (non versionato)
-docs/             PLAN.md (fasi), ICAP_FORMAT.md, ICAP_ABI.md, FORUM_MESSAGE.md
+docs/             PLAN.md (fasi), ICAP_FORMAT.md, ICAP_ABI.md, FORUM_MESSAGE.md (in inglese)
 ```
 
 ## Comandi
